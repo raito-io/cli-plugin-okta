@@ -13,16 +13,16 @@ import (
 	"time"
 )
 
-var statusesToSkip = map[string]struct{} {
-	"PROVISIONED": {},
+var statusesToSkip = map[string]struct{}{
+	"PROVISIONED":   {},
 	"DEPROVISIONED": {},
-	"SUSPENDED": {},
+	"SUSPENDED":     {},
 }
 
 type IdentityStoreSyncer struct {
-	config *identity_store.IdentityStoreSyncConfig
+	config  *identity_store.IdentityStoreSyncConfig
 	baseUrl string
-	token string
+	token   string
 }
 
 func (s *IdentityStoreSyncer) SyncIdentityStore(config *identity_store.IdentityStoreSyncConfig) identity_store.IdentityStoreSyncResult {
@@ -30,21 +30,21 @@ func (s *IdentityStoreSyncer) SyncIdentityStore(config *identity_store.IdentityS
 
 	oktaDomain := config.GetString(OktaDomain)
 	if oktaDomain == "" {
-		return identity_store.IdentityStoreSyncResult {
+		return identity_store.IdentityStoreSyncResult{
 			Error: api.CreateMissingInputParameterError(OktaDomain),
 		}
 	}
 	s.baseUrl = "https://" + s.cleanOktaDomain(oktaDomain)
 	s.token = config.GetString(OktaToken)
 	if s.token == "" {
-		return identity_store.IdentityStoreSyncResult {
+		return identity_store.IdentityStoreSyncResult{
 			Error: api.CreateMissingInputParameterError(OktaToken),
 		}
 	}
 
 	fileCreator, err := isb.NewIdentityStoreFileCreator(config)
 	if err != nil {
-		return identity_store.IdentityStoreSyncResult {
+		return identity_store.IdentityStoreSyncResult{
 			Error: api.ToErrorResult(err),
 		}
 	}
@@ -55,13 +55,13 @@ func (s *IdentityStoreSyncer) SyncIdentityStore(config *identity_store.IdentityS
 	userGroups := make(map[string][]string)
 	err = s.syncGroups(&fileCreator, userGroups)
 	if err != nil {
-		return identity_store.IdentityStoreSyncResult {
+		return identity_store.IdentityStoreSyncResult{
 			Error: api.ToErrorResult(err),
 		}
 	}
 	err = s.syncUsers(&fileCreator, userGroups)
 	if err != nil {
-		return identity_store.IdentityStoreSyncResult {
+		return identity_store.IdentityStoreSyncResult{
 			Error: api.ToErrorResult(err),
 		}
 	}
@@ -70,7 +70,7 @@ func (s *IdentityStoreSyncer) SyncIdentityStore(config *identity_store.IdentityS
 
 	logger.Info(fmt.Sprintf("Done fetching %d users and %d groups from Okta in %s", fileCreator.GetUserCount(), fileCreator.GetGroupCount(), sec))
 
-	return identity_store.IdentityStoreSyncResult {}
+	return identity_store.IdentityStoreSyncResult{}
 }
 
 func (s *IdentityStoreSyncer) cleanOktaDomain(input string) string {
@@ -120,6 +120,9 @@ func (s *IdentityStoreSyncer) readGroupsFromURL(url string, isFileCreator *isb.I
 	if err != nil {
 		return "", err
 	}
+	if resp.StatusCode >= 300 {
+		return "", fmt.Errorf("Received HTTP error code %d when calling %q: %s", resp.StatusCode, url, resp.Status)
+	}
 	groupEntities := make([]groupEntity, 0, 200)
 	body, err := ioutil.ReadAll(resp.Body)
 	defer resp.Body.Close()
@@ -135,10 +138,10 @@ func (s *IdentityStoreSyncer) readGroupsFromURL(url string, isFileCreator *isb.I
 	for _, groupEntity := range groupEntities {
 		logger.Debug(fmt.Sprintf("Handling group %q.", groupEntity.Profile.Name))
 		group := isb.Group{
-			ExternalId: groupEntity.Id,
+			ExternalId:  groupEntity.Id,
 			DisplayName: groupEntity.Profile.Name,
 			Description: groupEntity.Profile.Description,
-			Name: groupEntity.Profile.Name,
+			Name:        groupEntity.Profile.Name,
 		}
 		groups = append(groups, group)
 		err = s.fetchUsersForGroup(groupEntity.Links.Users.Href, groupEntity.Id, userGroups)
@@ -158,6 +161,9 @@ func (s *IdentityStoreSyncer) fetchUsersForGroup(url string, group string, userG
 	resp, err := s.doRequest(url)
 	if err != nil {
 		return err
+	}
+	if resp.StatusCode >= 300 {
+		return fmt.Errorf("Received HTTP error code %d when calling %q: %s", resp.StatusCode, url, resp.Status)
 	}
 	userEntities := make([]userIdEntity, 0, 200)
 	defer resp.Body.Close()
@@ -186,6 +192,9 @@ func (s *IdentityStoreSyncer) readUsersFromURL(url string, isFileCreator *isb.Id
 	if err != nil {
 		return "", err
 	}
+	if resp.StatusCode >= 300 {
+		return "", fmt.Errorf("Received HTTP error code %d when calling %q: %s", resp.StatusCode, url, resp.Status)
+	}
 	userEntities := make([]userEntity, 0, 200)
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
@@ -208,38 +217,38 @@ func (s *IdentityStoreSyncer) readUsersFromURL(url string, isFileCreator *isb.Id
 			}
 
 			tags := make(map[string]interface{})
-			if (userEntity.Profile.Department != "") {
+			if userEntity.Profile.Department != "" {
 				tags["Department"] = userEntity.Profile.Department
 			}
-			if (userEntity.Profile.Division != "") {
+			if userEntity.Profile.Division != "" {
 				tags["Division"] = userEntity.Profile.Division
 			}
-			if (userEntity.Profile.Organization != "") {
+			if userEntity.Profile.Organization != "" {
 				tags["Organization"] = userEntity.Profile.Organization
 			}
-			if (userEntity.Profile.CostCenter != "") {
+			if userEntity.Profile.CostCenter != "" {
 				tags["CostCenter"] = userEntity.Profile.CostCenter
 			}
-			if (userEntity.Profile.CountryCode != "") {
+			if userEntity.Profile.CountryCode != "" {
 				tags["CountryCode"] = userEntity.Profile.CountryCode
 			}
-			if (userEntity.Profile.State != "") {
+			if userEntity.Profile.State != "" {
 				tags["State"] = userEntity.Profile.State
 			}
-			if (userEntity.Profile.City != "") {
+			if userEntity.Profile.City != "" {
 				tags["City"] = userEntity.Profile.City
 			}
-			if (userEntity.Profile.Title != "") {
+			if userEntity.Profile.Title != "" {
 				tags["Title"] = userEntity.Profile.Title
 			}
 
 			user := isb.User{
-				ExternalId: userEntity.Id,
-				UserName: userEntity.Profile.Login,
-				Name: userEntity.Profile.FirstName + " " + userEntity.Profile.LastName,
-				Email: userEntity.Profile.Email,
+				ExternalId:       userEntity.Id,
+				UserName:         userEntity.Profile.Login,
+				Name:             userEntity.Profile.FirstName + " " + userEntity.Profile.LastName,
+				Email:            userEntity.Profile.Email,
 				GroupExternalIds: userGroups[userEntity.Id],
-				Tags: tags,
+				Tags:             tags,
 			}
 			users = append(users, user)
 		}
@@ -271,28 +280,28 @@ func (s *IdentityStoreSyncer) getNextLink(resp *http.Response) string {
 	links := resp.Header.Values("link")
 	for _, link := range links {
 		if strings.HasSuffix(link, "rel=\"next\"") {
-			return link[strings.Index(link, "<")+1:strings.Index(link,">")]
+			return link[strings.Index(link, "<")+1 : strings.Index(link, ">")]
 		}
 	}
 	return ""
 }
 
 type userEntity struct {
-	Id string
-	Status string
-	Profile  struct {
-		Login string `json:"login"`
-		FirstName string `json:"firstName"`
-		LastName string `json:"lastName"`
-		Email string `json:"email"`
-		Department string `json:"department"`
-		Division string `json:"division"`
+	Id      string
+	Status  string
+	Profile struct {
+		Login        string `json:"login"`
+		FirstName    string `json:"firstName"`
+		LastName     string `json:"lastName"`
+		Email        string `json:"email"`
+		Department   string `json:"department"`
+		Division     string `json:"division"`
 		Organization string `json:"organization"`
-		CostCenter string `json:"costCenter"`
-		CountryCode string `json:"countryCode"`
-		State string `json:"state"`
-		City string `json:"city"`
-		Title string `json:"title"`
+		CostCenter   string `json:"costCenter"`
+		CountryCode  string `json:"countryCode"`
+		State        string `json:"state"`
+		City         string `json:"city"`
+		Title        string `json:"title"`
 	}
 }
 
@@ -302,9 +311,9 @@ type userIdEntity struct {
 }
 
 type groupEntity struct {
-	Id string
+	Id      string
 	Profile struct {
-		Name string
+		Name        string
 		Description string
 	}
 	Links struct {

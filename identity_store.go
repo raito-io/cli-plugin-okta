@@ -111,6 +111,7 @@ func (s *IdentityStoreSyncer) readGroupsFromURL(url string, identityHandler wrap
 
 	groupEntities := make([]groupEntity, 0, 200)
 	body, err := io.ReadAll(resp.Body)
+
 	defer resp.Body.Close()
 
 	if err != nil {

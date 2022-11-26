@@ -207,60 +207,62 @@ func (s *IdentityStoreSyncer) readUsersFromURL(url string, identityHandler wrapp
 	}
 
 	for _, userEntity := range userEntities {
-		if userEntity.Profile.Login != "" {
-			logger.Debug(fmt.Sprintf("Handling user %q.", userEntity.Profile.Login))
+		if userEntity.Profile.Login == "" {
+			continue
+		}
 
-			if _, ok := statusesToSkip[strings.ToUpper(userEntity.Status)]; ok {
-				logger.Debug(fmt.Sprintf("Skipping user %q with status %q", userEntity.Profile.Login, userEntity.Status))
-				continue
-			}
+		logger.Debug(fmt.Sprintf("Handling user %q.", userEntity.Profile.Login))
 
-			tags := make(map[string]interface{})
-			if userEntity.Profile.Department != "" {
-				tags["Department"] = userEntity.Profile.Department
-			}
+		if _, ok := statusesToSkip[strings.ToUpper(userEntity.Status)]; ok {
+			logger.Debug(fmt.Sprintf("Skipping user %q with status %q", userEntity.Profile.Login, userEntity.Status))
+			continue
+		}
 
-			if userEntity.Profile.Division != "" {
-				tags["Division"] = userEntity.Profile.Division
-			}
+		tags := make(map[string]interface{})
+		if userEntity.Profile.Department != "" {
+			tags["Department"] = userEntity.Profile.Department
+		}
 
-			if userEntity.Profile.Organization != "" {
-				tags["Organization"] = userEntity.Profile.Organization
-			}
+		if userEntity.Profile.Division != "" {
+			tags["Division"] = userEntity.Profile.Division
+		}
 
-			if userEntity.Profile.CostCenter != "" {
-				tags["CostCenter"] = userEntity.Profile.CostCenter
-			}
+		if userEntity.Profile.Organization != "" {
+			tags["Organization"] = userEntity.Profile.Organization
+		}
 
-			if userEntity.Profile.CountryCode != "" {
-				tags["CountryCode"] = userEntity.Profile.CountryCode
-			}
+		if userEntity.Profile.CostCenter != "" {
+			tags["CostCenter"] = userEntity.Profile.CostCenter
+		}
 
-			if userEntity.Profile.State != "" {
-				tags["State"] = userEntity.Profile.State
-			}
+		if userEntity.Profile.CountryCode != "" {
+			tags["CountryCode"] = userEntity.Profile.CountryCode
+		}
 
-			if userEntity.Profile.City != "" {
-				tags["City"] = userEntity.Profile.City
-			}
+		if userEntity.Profile.State != "" {
+			tags["State"] = userEntity.Profile.State
+		}
 
-			if userEntity.Profile.Title != "" {
-				tags["Title"] = userEntity.Profile.Title
-			}
+		if userEntity.Profile.City != "" {
+			tags["City"] = userEntity.Profile.City
+		}
 
-			user := isb.User{
-				ExternalId:       userEntity.Id,
-				UserName:         userEntity.Profile.Login,
-				Name:             userEntity.Profile.FirstName + " " + userEntity.Profile.LastName,
-				Email:            userEntity.Profile.Email,
-				GroupExternalIds: userGroups[userEntity.Id],
-				Tags:             tags,
-			}
+		if userEntity.Profile.Title != "" {
+			tags["Title"] = userEntity.Profile.Title
+		}
 
-			err = identityHandler.AddUsers(&user)
-			if err != nil {
-				return "", err
-			}
+		user := isb.User{
+			ExternalId:       userEntity.Id,
+			UserName:         userEntity.Profile.Login,
+			Name:             userEntity.Profile.FirstName + " " + userEntity.Profile.LastName,
+			Email:            userEntity.Profile.Email,
+			GroupExternalIds: userGroups[userEntity.Id],
+			Tags:             tags,
+		}
+
+		err = identityHandler.AddUsers(&user)
+		if err != nil {
+			return "", err
 		}
 	}
 

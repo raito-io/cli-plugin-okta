@@ -5,6 +5,14 @@
 *.so
 *.dylib
 
+
+# User specific stuff for IntelliJ Idea
+.idea
+
+# VSCode stuff
+.vscode
+__debug_bin
+
 # Test binary, built with `go test -c`
 *.test
 
@@ -13,3 +21,9 @@
 
 # Dependency directories (remove the comment below to include it)
 # vendor/
+cli-plugin-snowflake*
+local*.sh
+raito*.yml
+*raito*.json
+.idea
+*coverage.*

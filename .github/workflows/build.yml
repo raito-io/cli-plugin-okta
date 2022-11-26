@@ -8,36 +8,35 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Granting private modules access
-        run: git config --global url."https://${{ secrets.GORELEASER_TOKEN }}:x-oauth-basic@github.com/raito-io".insteadOf "https://github.com/raito-io"
       - name: Check out repository code
-        uses: actions/checkout@v2
-      - name: List files in the repository
-        run: |
-          ls ${{ github.workspace }}
-      - name: Setup Go
-        uses: actions/setup-go@v2
+        uses: actions/checkout@v3
+
+      - name: Install Go
+        uses: actions/setup-go@v3
         with:
-          go-version: '1.17'
-      - uses: actions/cache@v2
-        with:
-          path: |
-            ~/go/pkg/mod
-            ~/.cache/go-build
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-
+          go-version: '1.19'
+          cache: true
+
       - name: Mod Tidy
         run: go mod tidy
+
       - name: Build
-        run: go build ./...
-      - name: golangci-lint
-        uses: golangci/golangci-lint-action@v2
+        run: make build
+
+      - name: Lint
+        uses: golangci/golangci-lint-action@v3
         with:
-          args: --tests=false
-          version: v1.43
-          skip-go-installation: true
-      - run: go test -coverpkg=./... -covermode=atomic -coverprofile=coverage.txt ./...
+          version: v1.48.0
+
+      - name: Test
+        run: make test
+        env:
+          SF_ACCOUNT: ${{ secrets.sf_account }}
+          SF_USER: ${{ secrets.sf_user }}
+          SF_PASSWORD: ${{ secrets.sf_password }}
+          SF_ROLE: ${{ secrets.sf_role }}
+          SF_STANDARD_EDITION: true
+
       - uses: codecov/codecov-action@v2
         with:
           token: ${{ secrets.CODECOV_TOKEN }}

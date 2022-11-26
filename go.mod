@@ -1,10 +1,10 @@
 module github.com/raito-io/cli-plugin-okta
 
-go 1.17
+go 1.19
 
 require (
-	github.com/hashicorp/go-hclog v1.0.0
-	github.com/raito-io/cli v0.5.0
+	github.com/hashicorp/go-hclog v1.2.0
+	github.com/raito-io/cli v0.25.0
 )
 
 require (

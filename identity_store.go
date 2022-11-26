@@ -1,16 +1,17 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	isb "github.com/raito-io/cli/base/identity_store"
-	"github.com/raito-io/cli/common/api"
-	"github.com/raito-io/cli/common/api/identity_store"
-	"github.com/raito-io/cli/common/util/url"
+	"github.com/raito-io/cli/base/util/config"
+	e "github.com/raito-io/cli/base/util/error"
+	"github.com/raito-io/cli/base/util/url"
+	"github.com/raito-io/cli/base/wrappers"
 	"io/ioutil"
 	"net/http"
 	"strings"
-	"time"
 )
 
 var statusesToSkip = map[string]struct{}{
@@ -20,57 +21,42 @@ var statusesToSkip = map[string]struct{}{
 }
 
 type IdentityStoreSyncer struct {
-	config  *identity_store.IdentityStoreSyncConfig
 	baseUrl string
 	token   string
 }
 
-func (s *IdentityStoreSyncer) SyncIdentityStore(config *identity_store.IdentityStoreSyncConfig) identity_store.IdentityStoreSyncResult {
-	s.config = config
+func (s *IdentityStoreSyncer) GetIdentityStoreMetaData() isb.MetaData {
+	logger.Debug("Returning meta data for Okta identity store")
 
-	oktaDomain := config.GetString(OktaDomain)
+	return isb.MetaData{
+		Type: "okta",
+	}
+}
+
+func (s *IdentityStoreSyncer) SyncIdentityStore(ctx context.Context, identityHandler wrappers.IdentityStoreIdentityHandler, configMap *config.ConfigMap) error {
+
+	oktaDomain := configMap.GetString(OktaDomain)
 	if oktaDomain == "" {
-		return identity_store.IdentityStoreSyncResult{
-			Error: api.CreateMissingInputParameterError(OktaDomain),
-		}
+		return e.CreateMissingInputParameterError(OktaDomain)
 	}
+
 	s.baseUrl = "https://" + s.cleanOktaDomain(oktaDomain)
-	s.token = config.GetString(OktaToken)
+	s.token = configMap.GetString(OktaToken)
 	if s.token == "" {
-		return identity_store.IdentityStoreSyncResult{
-			Error: api.CreateMissingInputParameterError(OktaToken),
-		}
+		return e.CreateMissingInputParameterError(OktaToken)
 	}
-
-	fileCreator, err := isb.NewIdentityStoreFileCreator(config)
-	if err != nil {
-		return identity_store.IdentityStoreSyncResult{
-			Error: api.ToErrorResult(err),
-		}
-	}
-	defer fileCreator.Close()
-
-	start := time.Now()
 
 	userGroups := make(map[string][]string)
-	err = s.syncGroups(&fileCreator, userGroups)
+	err := s.syncGroups(identityHandler, userGroups)
 	if err != nil {
-		return identity_store.IdentityStoreSyncResult{
-			Error: api.ToErrorResult(err),
-		}
+		return err
 	}
-	err = s.syncUsers(&fileCreator, userGroups)
+	err = s.syncUsers(identityHandler, userGroups)
 	if err != nil {
-		return identity_store.IdentityStoreSyncResult{
-			Error: api.ToErrorResult(err),
-		}
+		return err
 	}
 
-	sec := time.Since(start).Round(time.Millisecond)
-
-	logger.Info(fmt.Sprintf("Done fetching %d users and %d groups from Okta in %s", fileCreator.GetUserCount(), fileCreator.GetGroupCount(), sec))
-
-	return identity_store.IdentityStoreSyncResult{}
+	return nil
 }
 
 func (s *IdentityStoreSyncer) cleanOktaDomain(input string) string {
@@ -79,43 +65,34 @@ func (s *IdentityStoreSyncer) cleanOktaDomain(input string) string {
 	return domain
 }
 
-func (s *IdentityStoreSyncer) syncUsers(isFileCreator *isb.IdentityStoreFileCreator, userGroups map[string][]string) error {
-	start := time.Now()
-
+func (s *IdentityStoreSyncer) syncUsers(identityHandler wrappers.IdentityStoreIdentityHandler, userGroups map[string][]string) error {
 	url := s.baseUrl + "/api/v1/users?limit=200"
 	for url != "" {
 		var err error
-		url, err = s.readUsersFromURL(url, isFileCreator, userGroups)
+		url, err = s.readUsersFromURL(url, identityHandler, userGroups)
 		if err != nil {
 			return err
 		}
 	}
 
-	sec := time.Since(start).Round(time.Millisecond)
-
-	logger.Info(fmt.Sprintf("Fetched %d users from Okta in %s", (*isFileCreator).GetUserCount(), sec))
 	return nil
 }
 
-func (s *IdentityStoreSyncer) syncGroups(isFileCreator *isb.IdentityStoreFileCreator, userGroups map[string][]string) error {
-	start := time.Now()
+func (s *IdentityStoreSyncer) syncGroups(identityHandler wrappers.IdentityStoreIdentityHandler, userGroups map[string][]string) error {
 
 	url := s.baseUrl + "/api/v1/groups?limit=200"
 	for url != "" {
 		var err error
-		url, err = s.readGroupsFromURL(url, isFileCreator, userGroups)
+		url, err = s.readGroupsFromURL(url, identityHandler, userGroups)
 		if err != nil {
 			return err
 		}
 	}
 
-	sec := time.Since(start).Round(time.Millisecond)
-
-	logger.Info(fmt.Sprintf("Fetched %d groups from Okta in %s", (*isFileCreator).GetGroupCount(), sec))
 	return nil
 }
 
-func (s *IdentityStoreSyncer) readGroupsFromURL(url string, isFileCreator *isb.IdentityStoreFileCreator, userGroups map[string][]string) (string, error) {
+func (s *IdentityStoreSyncer) readGroupsFromURL(url string, identityHandler wrappers.IdentityStoreIdentityHandler, userGroups map[string][]string) (string, error) {
 	resp, err := s.doRequest(url)
 	if err != nil {
 		return "", err
@@ -134,7 +111,6 @@ func (s *IdentityStoreSyncer) readGroupsFromURL(url string, isFileCreator *isb.I
 		return "", fmt.Errorf("Error while parsing body from HTTP GET request to %q: %s", url, err.Error())
 	}
 
-	groups := make([]isb.Group, 0, 200)
 	for _, groupEntity := range groupEntities {
 		logger.Debug(fmt.Sprintf("Handling group %q.", groupEntity.Profile.Name))
 		group := isb.Group{
@@ -143,15 +119,15 @@ func (s *IdentityStoreSyncer) readGroupsFromURL(url string, isFileCreator *isb.I
 			Description: groupEntity.Profile.Description,
 			Name:        groupEntity.Profile.Name,
 		}
-		groups = append(groups, group)
+		err = identityHandler.AddGroups(&group)
+		if err != nil {
+			return "", err
+		}
+
 		err = s.fetchUsersForGroup(groupEntity.Links.Users.Href, groupEntity.Id, userGroups)
 		if err != nil {
 			return "", fmt.Errorf("Error while fetching Users for group %s: %s", groupEntity.Id, err.Error())
 		}
-	}
-	err = (*isFileCreator).AddGroups(groups)
-	if err != nil {
-		return "", fmt.Errorf("Error while adding groups to the importer: %s", err.Error())
 	}
 
 	return s.getNextLink(resp), nil
@@ -187,7 +163,7 @@ func (s *IdentityStoreSyncer) fetchUsersForGroup(url string, group string, userG
 	return nil
 }
 
-func (s *IdentityStoreSyncer) readUsersFromURL(url string, isFileCreator *isb.IdentityStoreFileCreator, userGroups map[string][]string) (string, error) {
+func (s *IdentityStoreSyncer) readUsersFromURL(url string, identityHandler wrappers.IdentityStoreIdentityHandler, userGroups map[string][]string) (string, error) {
 	resp, err := s.doRequest(url)
 	if err != nil {
 		return "", err
@@ -206,7 +182,6 @@ func (s *IdentityStoreSyncer) readUsersFromURL(url string, isFileCreator *isb.Id
 		return "", fmt.Errorf("Error while parsin body from HTTP GET request to %q: %s", url, err.Error())
 	}
 
-	users := make([]isb.User, 0, 200)
 	for _, userEntity := range userEntities {
 		if userEntity.Profile.Login != "" {
 			logger.Debug(fmt.Sprintf("Handling user %q.", userEntity.Profile.Login))
@@ -250,13 +225,13 @@ func (s *IdentityStoreSyncer) readUsersFromURL(url string, isFileCreator *isb.Id
 				GroupExternalIds: userGroups[userEntity.Id],
 				Tags:             tags,
 			}
-			users = append(users, user)
+
+			err = identityHandler.AddUsers(&user)
+			if err != nil {
+				return "", err
+			}
 		}
 
-	}
-	err = (*isFileCreator).AddUsers(users)
-	if err != nil {
-		return "", fmt.Errorf("Error while adding users to the importer: %s", err.Error())
 	}
 
 	return s.getNextLink(resp), nil
@@ -271,7 +246,7 @@ func (s *IdentityStoreSyncer) doRequest(url string) (*http.Response, error) {
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		return nil, api.CreateSourceConnectionError(url, err.Error())
+		return nil, e.CreateSourceConnectionError(url, err.Error())
 	}
 	return resp, nil
 }

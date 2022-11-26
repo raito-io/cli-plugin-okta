@@ -97,15 +97,19 @@ func (s *IdentityStoreSyncer) readGroupsFromURL(url string, identityHandler wrap
 	if err != nil {
 		return "", err
 	}
+
 	if resp.StatusCode >= 300 {
 		return "", fmt.Errorf("Received HTTP error code %d when calling %q: %s", resp.StatusCode, url, resp.Status)
 	}
+
 	groupEntities := make([]groupEntity, 0, 200)
 	body, err := ioutil.ReadAll(resp.Body)
 	defer resp.Body.Close()
+
 	if err != nil {
 		return "", fmt.Errorf("Error while reading body from HTTP GET request to %q: %s", url, err.Error())
 	}
+
 	err = json.Unmarshal(body, &groupEntities)
 	if err != nil {
 		return "", fmt.Errorf("Error while parsing body from HTTP GET request to %q: %s", url, err.Error())
@@ -138,16 +142,20 @@ func (s *IdentityStoreSyncer) fetchUsersForGroup(url string, group string, userG
 	if err != nil {
 		return err
 	}
+
 	if resp.StatusCode >= 300 {
 		return fmt.Errorf("Received HTTP error code %d when calling %q: %s", resp.StatusCode, url, resp.Status)
 	}
+
 	userEntities := make([]userIdEntity, 0, 200)
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
+
 	if err != nil {
 		return fmt.Errorf("Error while reading body from HTTP GET request to %q: %s", url, err.Error())
 	}
 	err = json.Unmarshal(body, &userEntities)
+
 	if err != nil {
 		return fmt.Errorf("Error while parsin body from HTTP GET request to %q: %s", url, err.Error())
 	}
@@ -160,24 +168,29 @@ func (s *IdentityStoreSyncer) fetchUsersForGroup(url string, group string, userG
 	if next != "" {
 		return s.fetchUsersForGroup(next, group, userGroups)
 	}
+
 	return nil
 }
 
 func (s *IdentityStoreSyncer) readUsersFromURL(url string, identityHandler wrappers.IdentityStoreIdentityHandler, userGroups map[string][]string) (string, error) {
 	resp, err := s.doRequest(url)
+
 	if err != nil {
 		return "", err
 	}
+
 	if resp.StatusCode >= 300 {
 		return "", fmt.Errorf("Received HTTP error code %d when calling %q: %s", resp.StatusCode, url, resp.Status)
 	}
 	userEntities := make([]userEntity, 0, 200)
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
+
 	if err != nil {
 		return "", fmt.Errorf("Error while reading body from HTTP GET request to %q: %s", url, err.Error())
 	}
 	err = json.Unmarshal(body, &userEntities)
+
 	if err != nil {
 		return "", fmt.Errorf("Error while parsin body from HTTP GET request to %q: %s", url, err.Error())
 	}
@@ -195,24 +208,31 @@ func (s *IdentityStoreSyncer) readUsersFromURL(url string, identityHandler wrapp
 			if userEntity.Profile.Department != "" {
 				tags["Department"] = userEntity.Profile.Department
 			}
+
 			if userEntity.Profile.Division != "" {
 				tags["Division"] = userEntity.Profile.Division
 			}
+
 			if userEntity.Profile.Organization != "" {
 				tags["Organization"] = userEntity.Profile.Organization
 			}
+
 			if userEntity.Profile.CostCenter != "" {
 				tags["CostCenter"] = userEntity.Profile.CostCenter
 			}
+
 			if userEntity.Profile.CountryCode != "" {
 				tags["CountryCode"] = userEntity.Profile.CountryCode
 			}
+
 			if userEntity.Profile.State != "" {
 				tags["State"] = userEntity.Profile.State
 			}
+
 			if userEntity.Profile.City != "" {
 				tags["City"] = userEntity.Profile.City
 			}
+
 			if userEntity.Profile.Title != "" {
 				tags["Title"] = userEntity.Profile.Title
 			}
@@ -231,7 +251,6 @@ func (s *IdentityStoreSyncer) readUsersFromURL(url string, identityHandler wrapp
 				return "", err
 			}
 		}
-
 	}
 
 	return s.getNextLink(resp), nil
@@ -242,22 +261,27 @@ func (s *IdentityStoreSyncer) doRequest(url string) (*http.Response, error) {
 	if err != nil {
 		return nil, fmt.Errorf("Error while creating HTTP GET request to %q: %s", url, err.Error())
 	}
+
 	req.Header.Set("Authorization", "SSWS "+s.token)
 	client := &http.Client{}
+
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, e.CreateSourceConnectionError(url, err.Error())
 	}
+
 	return resp, nil
 }
 
 func (s *IdentityStoreSyncer) getNextLink(resp *http.Response) string {
 	links := resp.Header.Values("link")
+
 	for _, link := range links {
 		if strings.HasSuffix(link, "rel=\"next\"") {
 			return link[strings.Index(link, "<")+1 : strings.Index(link, ">")]
 		}
 	}
+
 	return ""
 }
 

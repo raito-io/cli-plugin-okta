@@ -106,7 +106,7 @@ func (s *IdentityStoreSyncer) readGroupsFromURL(url string, identityHandler wrap
 	}
 
 	if resp.StatusCode >= 300 {
-		return "", fmt.Errorf("Received HTTP error code %d when calling %q: %s", resp.StatusCode, url, resp.Status)
+		return "", fmt.Errorf("received HTTP error code %d when calling %q: %s", resp.StatusCode, url, resp.Status)
 	}
 
 	groupEntities := make([]groupEntity, 0, 200)
@@ -114,12 +114,12 @@ func (s *IdentityStoreSyncer) readGroupsFromURL(url string, identityHandler wrap
 	defer resp.Body.Close()
 
 	if err != nil {
-		return "", fmt.Errorf("Error while reading body from HTTP GET request to %q: %s", url, err.Error())
+		return "", fmt.Errorf("error while reading body from HTTP GET request to %q: %s", url, err.Error())
 	}
 
 	err = json.Unmarshal(body, &groupEntities)
 	if err != nil {
-		return "", fmt.Errorf("Error while parsing body from HTTP GET request to %q: %s", url, err.Error())
+		return "", fmt.Errorf("error while parsing body from HTTP GET request to %q: %s", url, err.Error())
 	}
 
 	for _, groupEntity := range groupEntities {
@@ -138,7 +138,7 @@ func (s *IdentityStoreSyncer) readGroupsFromURL(url string, identityHandler wrap
 
 		err = s.fetchUsersForGroup(groupEntity.Links.Users.Href, groupEntity.Id, userGroups)
 		if err != nil {
-			return "", fmt.Errorf("Error while fetching Users for group %s: %s", groupEntity.Id, err.Error())
+			return "", fmt.Errorf("error while fetching Users for group %s: %s", groupEntity.Id, err.Error())
 		}
 	}
 
@@ -152,20 +152,22 @@ func (s *IdentityStoreSyncer) fetchUsersForGroup(url string, group string, userG
 	}
 
 	if resp.StatusCode >= 300 {
-		return fmt.Errorf("Received HTTP error code %d when calling %q: %s", resp.StatusCode, url, resp.Status)
+		return fmt.Errorf("eeceived HTTP error code %d when calling %q: %s", resp.StatusCode, url, resp.Status)
 	}
 
 	userEntities := make([]userIdEntity, 0, 200)
+
 	defer resp.Body.Close()
+
 	body, err := io.ReadAll(resp.Body)
 
 	if err != nil {
-		return fmt.Errorf("Error while reading body from HTTP GET request to %q: %s", url, err.Error())
+		return fmt.Errorf("error while reading body from HTTP GET request to %q: %s", url, err.Error())
 	}
 	err = json.Unmarshal(body, &userEntities)
 
 	if err != nil {
-		return fmt.Errorf("Error while parsin body from HTTP GET request to %q: %s", url, err.Error())
+		return fmt.Errorf("error while parsin body from HTTP GET request to %q: %s", url, err.Error())
 	}
 
 	for _, userEntity := range userEntities {
@@ -188,7 +190,7 @@ func (s *IdentityStoreSyncer) readUsersFromURL(url string, identityHandler wrapp
 	}
 
 	if resp.StatusCode >= 300 {
-		return "", fmt.Errorf("Received HTTP error code %d when calling %q: %s", resp.StatusCode, url, resp.Status)
+		return "", fmt.Errorf("received HTTP error code %d when calling %q: %s", resp.StatusCode, url, resp.Status)
 	}
 
 	userEntities := make([]*userEntity, 0, 200)
@@ -198,12 +200,12 @@ func (s *IdentityStoreSyncer) readUsersFromURL(url string, identityHandler wrapp
 	body, err := io.ReadAll(resp.Body)
 
 	if err != nil {
-		return "", fmt.Errorf("Error while reading body from HTTP GET request to %q: %s", url, err.Error())
+		return "", fmt.Errorf("error while reading body from HTTP GET request to %q: %s", url, err.Error())
 	}
 	err = json.Unmarshal(body, &userEntities)
 
 	if err != nil {
-		return "", fmt.Errorf("Error while parsin body from HTTP GET request to %q: %s", url, err.Error())
+		return "", fmt.Errorf("error while parsin body from HTTP GET request to %q: %s", url, err.Error())
 	}
 
 	for _, userEntity := range userEntities {
@@ -272,7 +274,7 @@ func (s *IdentityStoreSyncer) readUsersFromURL(url string, identityHandler wrapp
 func (s *IdentityStoreSyncer) doRequest(url string) (*http.Response, error) {
 	req, err := http.NewRequest("GET", url, http.NoBody)
 	if err != nil {
-		return nil, fmt.Errorf("Error while creating HTTP GET request to %q: %s", url, err.Error())
+		return nil, fmt.Errorf("error while creating HTTP GET request to %q: %s", url, err.Error())
 	}
 
 	req.Header.Set("Authorization", "SSWS "+s.token)

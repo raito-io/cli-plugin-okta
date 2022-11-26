@@ -35,7 +35,6 @@ func (s *IdentityStoreSyncer) GetIdentityStoreMetaData() isb.MetaData {
 }
 
 func (s *IdentityStoreSyncer) SyncIdentityStore(ctx context.Context, identityHandler wrappers.IdentityStoreIdentityHandler, configMap *config.ConfigMap) error {
-
 	oktaDomain := configMap.GetString(OktaDomain)
 	if oktaDomain == "" {
 		return e.CreateMissingInputParameterError(OktaDomain)
@@ -43,16 +42,19 @@ func (s *IdentityStoreSyncer) SyncIdentityStore(ctx context.Context, identityHan
 
 	s.baseUrl = "https://" + s.cleanOktaDomain(oktaDomain)
 	s.token = configMap.GetString(OktaToken)
+
 	if s.token == "" {
 		return e.CreateMissingInputParameterError(OktaToken)
 	}
 
 	userGroups := make(map[string][]string)
 	err := s.syncGroups(identityHandler, userGroups)
+
 	if err != nil {
 		return err
 	}
 	err = s.syncUsers(identityHandler, userGroups)
+
 	if err != nil {
 		return err
 	}
@@ -73,6 +75,7 @@ func (s *IdentityStoreSyncer) syncUsers(identityHandler wrappers.IdentityStoreId
 	for url != "" {
 		var err error
 		url, err = s.readUsersFromURL(url, identityHandler, userGroups)
+
 		if err != nil {
 			return err
 		}
@@ -87,6 +90,7 @@ func (s *IdentityStoreSyncer) syncGroups(identityHandler wrappers.IdentityStoreI
 	for url != "" {
 		var err error
 		url, err = s.readGroupsFromURL(url, identityHandler, userGroups)
+
 		if err != nil {
 			return err
 		}
@@ -187,8 +191,10 @@ func (s *IdentityStoreSyncer) readUsersFromURL(url string, identityHandler wrapp
 		return "", fmt.Errorf("Received HTTP error code %d when calling %q: %s", resp.StatusCode, url, resp.Status)
 	}
 
-	userEntities := make([]userEntity, 0, 200)
+	userEntities := make([]*userEntity, 0, 200)
+
 	defer resp.Body.Close()
+
 	body, err := io.ReadAll(resp.Body)
 
 	if err != nil {

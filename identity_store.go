@@ -4,14 +4,15 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
+	"strings"
+
 	isb "github.com/raito-io/cli/base/identity_store"
 	"github.com/raito-io/cli/base/util/config"
 	e "github.com/raito-io/cli/base/util/error"
 	"github.com/raito-io/cli/base/util/url"
 	"github.com/raito-io/cli/base/wrappers"
-	"io/ioutil"
-	"net/http"
-	"strings"
 )
 
 var statusesToSkip = map[string]struct{}{
@@ -62,11 +63,13 @@ func (s *IdentityStoreSyncer) SyncIdentityStore(ctx context.Context, identityHan
 func (s *IdentityStoreSyncer) cleanOktaDomain(input string) string {
 	domain := url.CutOffSchema(input)
 	domain = url.CutOffSuffix(domain, "/")
+
 	return domain
 }
 
 func (s *IdentityStoreSyncer) syncUsers(identityHandler wrappers.IdentityStoreIdentityHandler, userGroups map[string][]string) error {
 	url := s.baseUrl + "/api/v1/users?limit=200"
+
 	for url != "" {
 		var err error
 		url, err = s.readUsersFromURL(url, identityHandler, userGroups)
@@ -79,8 +82,8 @@ func (s *IdentityStoreSyncer) syncUsers(identityHandler wrappers.IdentityStoreId
 }
 
 func (s *IdentityStoreSyncer) syncGroups(identityHandler wrappers.IdentityStoreIdentityHandler, userGroups map[string][]string) error {
-
 	url := s.baseUrl + "/api/v1/groups?limit=200"
+
 	for url != "" {
 		var err error
 		url, err = s.readGroupsFromURL(url, identityHandler, userGroups)
@@ -103,7 +106,7 @@ func (s *IdentityStoreSyncer) readGroupsFromURL(url string, identityHandler wrap
 	}
 
 	groupEntities := make([]groupEntity, 0, 200)
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	defer resp.Body.Close()
 
 	if err != nil {
@@ -123,6 +126,7 @@ func (s *IdentityStoreSyncer) readGroupsFromURL(url string, identityHandler wrap
 			Description: groupEntity.Profile.Description,
 			Name:        groupEntity.Profile.Name,
 		}
+
 		err = identityHandler.AddGroups(&group)
 		if err != nil {
 			return "", err
@@ -149,7 +153,7 @@ func (s *IdentityStoreSyncer) fetchUsersForGroup(url string, group string, userG
 
 	userEntities := make([]userIdEntity, 0, 200)
 	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 
 	if err != nil {
 		return fmt.Errorf("Error while reading body from HTTP GET request to %q: %s", url, err.Error())
@@ -182,9 +186,10 @@ func (s *IdentityStoreSyncer) readUsersFromURL(url string, identityHandler wrapp
 	if resp.StatusCode >= 300 {
 		return "", fmt.Errorf("Received HTTP error code %d when calling %q: %s", resp.StatusCode, url, resp.Status)
 	}
+
 	userEntities := make([]userEntity, 0, 200)
 	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 
 	if err != nil {
 		return "", fmt.Errorf("Error while reading body from HTTP GET request to %q: %s", url, err.Error())
@@ -257,7 +262,7 @@ func (s *IdentityStoreSyncer) readUsersFromURL(url string, identityHandler wrapp
 }
 
 func (s *IdentityStoreSyncer) doRequest(url string) (*http.Response, error) {
-	req, err := http.NewRequest("GET", url, nil)
+	req, err := http.NewRequest("GET", url, http.NoBody)
 	if err != nil {
 		return nil, fmt.Errorf("Error while creating HTTP GET request to %q: %s", url, err.Error())
 	}

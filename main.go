@@ -16,6 +16,7 @@ var logger hclog.Logger
 
 func main() {
 	logger = base.Logger()
+	logger.SetLevel(hclog.Debug)
 
 	err := base.RegisterPlugins(wrappers.IdentityStoreSync(&IdentityStoreSyncer{}), &info.InfoImpl{
 		Info: plugin.PluginInfo{

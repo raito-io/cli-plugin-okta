@@ -15,15 +15,15 @@ import (
 	"github.com/raito-io/cli/base/wrappers"
 )
 
-var statusesToSkip = map[string]struct{}{
-	"PROVISIONED":   {},
+var defaultStatusesToSkip = map[string]struct{}{
 	"DEPROVISIONED": {},
 	"SUSPENDED":     {},
 }
 
 type IdentityStoreSyncer struct {
-	baseUrl string
-	token   string
+	baseUrl        string
+	token          string
+	statusesToSkip map[string]struct{}
 }
 
 func (s *IdentityStoreSyncer) GetIdentityStoreMetaData() isb.MetaData {
@@ -45,6 +45,16 @@ func (s *IdentityStoreSyncer) SyncIdentityStore(ctx context.Context, identityHan
 
 	if s.token == "" {
 		return e.CreateMissingInputParameterError(OktaToken)
+	}
+
+	excludes := configMap.GetString(OktaExcludeStatuses)
+	if excludes != "" {
+		s.statusesToSkip = make(map[string]struct{})
+		for _, status := range strings.Split(excludes, ",") {
+			s.statusesToSkip[strings.TrimSpace(status)] = struct{}{}
+		}
+	} else {
+		s.statusesToSkip = defaultStatusesToSkip
 	}
 
 	userGroups := make(map[string][]string)
@@ -216,7 +226,7 @@ func (s *IdentityStoreSyncer) readUsersFromURL(url string, identityHandler wrapp
 
 		logger.Debug(fmt.Sprintf("Handling user %q.", userEntity.Profile.Login))
 
-		if _, ok := statusesToSkip[strings.ToUpper(userEntity.Status)]; ok {
+		if _, ok := s.statusesToSkip[strings.ToUpper(userEntity.Status)]; ok {
 			logger.Debug(fmt.Sprintf("Skipping user %q with status %q", userEntity.Profile.Login, userEntity.Status))
 			continue
 		}

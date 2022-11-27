@@ -43,6 +43,13 @@ Next, replace the values of the indicated fields with your specific values:
  - `<<Okta IdentityStore ID>>`: the ID of the IdentityStore you created in the Raito Cloud UI.
  - `<<Your Okta Domain>>`: your full okta domain. e.g. `dev-123456789.okta.com`
 
+Optionally, you can set the `okta-excluded-statuses` parameter, where you can specify a comma-separated list of user statuses from Okta. When a user has one of these statuses, this user will not be synced.  
+By default, statuses `DEPROVISIONED` and `SUSPENDED` are ignored.  
+If you would also like to ignore the `PROVISIONED` status, for example, you can add this to the end of the configuration snippet:
+```json
+  okta-exclude-statuses: "DEPROVISIONED,SUSPENDED,PROVISIONED"
+```
+
 Make sure you have a system variable called `RAITO_OKTA_TOKEN` with a valid Okta token as its value.
 For more information on how to create and configure an Okta token, see the [Okta documentation](https://developer.okta.com/docs/guides/create-an-api-token/main/).
 
@@ -64,4 +71,4 @@ $> raito run
 ```
 This will take the configuration from the `raito.yml` file (in the current working directory) and start a single synchronization.
 
-Note: if you have multiple targets configured in your configuration file, you can run only this target by adding `--only-targets okta1` at the end of the command. 
+Note: if you have multiple targets configured in your configuration file, you can run only this target by adding `--only-targets okta1` at the end of the command.

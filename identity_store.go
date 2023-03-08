@@ -26,12 +26,12 @@ type IdentityStoreSyncer struct {
 	statusesToSkip map[string]struct{}
 }
 
-func (s *IdentityStoreSyncer) GetIdentityStoreMetaData() isb.MetaData {
+func (s *IdentityStoreSyncer) GetIdentityStoreMetaData(ctx context.Context) (*isb.MetaData, error) {
 	logger.Debug("Returning meta data for Okta identity store")
 
-	return isb.MetaData{
+	return &isb.MetaData{
 		Type: "okta",
-	}
+	}, nil
 }
 
 func (s *IdentityStoreSyncer) SyncIdentityStore(ctx context.Context, identityHandler wrappers.IdentityStoreIdentityHandler, configMap *config.ConfigMap) error {

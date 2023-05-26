@@ -27,3 +27,4 @@ raito*.yml
 *raito*.json
 .idea
 *coverage.*
+.idea/misc.xml

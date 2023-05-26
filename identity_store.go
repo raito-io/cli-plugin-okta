@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/raito-io/cli/base/tag"
 	"io"
 	"net/http"
 	"strings"
@@ -19,6 +20,8 @@ var defaultStatusesToSkip = map[string]struct{}{
 	"DEPROVISIONED": {},
 	"SUSPENDED":     {},
 }
+
+const tagSource = "Okta"
 
 type IdentityStoreSyncer struct {
 	baseUrl        string
@@ -231,38 +234,70 @@ func (s *IdentityStoreSyncer) readUsersFromURL(url string, identityHandler wrapp
 			continue
 		}
 
-		tags := make(map[string]interface{})
-		if userEntity.Profile.Department != "" {
-			tags["Department"] = userEntity.Profile.Department
+		tags := make([]*tag.Tag, 0)
+		/*if userEntity.Profile.Department != "" {
+			tags = append(tags, &tag.Tag{
+				Key:    "Department",
+				Value:  userEntity.Profile.Department,
+				Source: tagSource,
+			})
 		}
 
 		if userEntity.Profile.Division != "" {
-			tags["Division"] = userEntity.Profile.Division
+			tags = append(tags, &tag.Tag{
+				Key:    "Division",
+				Value:  userEntity.Profile.Division,
+				Source: tagSource,
+			})
 		}
 
 		if userEntity.Profile.Organization != "" {
-			tags["Organization"] = userEntity.Profile.Organization
+			tags = append(tags, &tag.Tag{
+				Key:    "Organization",
+				Value:  userEntity.Profile.Organization,
+				Source: tagSource,
+			})
 		}
 
 		if userEntity.Profile.CostCenter != "" {
-			tags["CostCenter"] = userEntity.Profile.CostCenter
+			tags = append(tags, &tag.Tag{
+				Key:    "CostCenter",
+				Value:  userEntity.Profile.CostCenter,
+				Source: tagSource,
+			})
 		}
 
 		if userEntity.Profile.CountryCode != "" {
-			tags["CountryCode"] = userEntity.Profile.CountryCode
+			tags = append(tags, &tag.Tag{
+				Key:    "CountryCode",
+				Value:  userEntity.Profile.CountryCode,
+				Source: tagSource,
+			})
 		}
 
 		if userEntity.Profile.State != "" {
-			tags["State"] = userEntity.Profile.State
+			tags = append(tags, &tag.Tag{
+				Key:    "State",
+				Value:  userEntity.Profile.State,
+				Source: tagSource,
+			})
 		}
 
 		if userEntity.Profile.City != "" {
-			tags["City"] = userEntity.Profile.City
+			tags = append(tags, &tag.Tag{
+				Key:    "City",
+				Value:  userEntity.Profile.City,
+				Source: tagSource,
+			})
 		}
 
 		if userEntity.Profile.Title != "" {
-			tags["Title"] = userEntity.Profile.Title
-		}
+			tags = append(tags, &tag.Tag{
+				Key:    "Title",
+				Value:  userEntity.Profile.Title,
+				Source: tagSource,
+			})
+		}*/
 
 		user := isb.User{
 			ExternalId:       userEntity.Id,

@@ -4,10 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/raito-io/cli/base/tag"
 	"io"
 	"net/http"
 	"strings"
+
+	"github.com/raito-io/cli/base/tag"
 
 	isb "github.com/raito-io/cli/base/identity_store"
 	"github.com/raito-io/cli/base/util/config"
@@ -235,6 +236,7 @@ func (s *IdentityStoreSyncer) readUsersFromURL(url string, identityHandler wrapp
 		}
 
 		tags := make([]*tag.Tag, 0)
+
 		if userEntity.Profile.Department != "" {
 			tags = append(tags, &tag.Tag{
 				Key:    "Department",

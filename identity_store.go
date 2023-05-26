@@ -235,7 +235,7 @@ func (s *IdentityStoreSyncer) readUsersFromURL(url string, identityHandler wrapp
 		}
 
 		tags := make([]*tag.Tag, 0)
-		/*if userEntity.Profile.Department != "" {
+		if userEntity.Profile.Department != "" {
 			tags = append(tags, &tag.Tag{
 				Key:    "Department",
 				Value:  userEntity.Profile.Department,
@@ -297,7 +297,7 @@ func (s *IdentityStoreSyncer) readUsersFromURL(url string, identityHandler wrapp
 				Value:  userEntity.Profile.Title,
 				Source: tagSource,
 			})
-		}*/
+		}
 
 		user := isb.User{
 			ExternalId:       userEntity.Id,

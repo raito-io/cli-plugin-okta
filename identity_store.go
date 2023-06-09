@@ -34,7 +34,9 @@ func (s *IdentityStoreSyncer) GetIdentityStoreMetaData(ctx context.Context) (*is
 	logger.Debug("Returning meta data for Okta identity store")
 
 	return &isb.MetaData{
-		Type: "okta",
+		Type:        "okta",
+		CanBeLinked: true,
+		CanBeMaster: true,
 	}, nil
 }
 

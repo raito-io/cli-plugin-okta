@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	github.com/hashicorp/go-hclog v1.5.0
-	github.com/raito-io/cli v0.40.1
+	github.com/raito-io/cli v0.42.0
 )
 
 require (

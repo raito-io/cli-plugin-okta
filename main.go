@@ -29,6 +29,7 @@ It only implements the Identity Store syncer interface to fetch users and groups
 					{Name: "okta-domain", Description: "The full okta domain to connect to. For example, mydomain.okta.com", Mandatory: true},
 					{Name: "okta-token", Description: "The secret okta token to use to authenticate against the okta domain.", Mandatory: true},
 				},
+				TagSource: tagSource,
 			},
 		})
 

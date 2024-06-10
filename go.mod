@@ -6,7 +6,7 @@ toolchain go1.22.0
 
 require (
 	github.com/hashicorp/go-hclog v1.6.3
-	github.com/raito-io/cli v0.65.1
+	github.com/raito-io/cli v0.65.2
 )
 
 require (

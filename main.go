@@ -30,6 +30,7 @@ It only implements the Identity Store syncer interface to fetch users and groups
 					{Name: "okta-token", Description: "The secret okta token to use to authenticate against the okta domain.", Mandatory: true},
 				},
 				TagSource: tagSource,
+				Type:      []plugin.PluginType{plugin.PluginType_PLUGIN_TYPE_IS_SYNC},
 			},
 		})
 

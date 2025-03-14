@@ -24,7 +24,47 @@ linters-settings:
       - paramTypeCombine
 
   govet:
-    check-shadowing: true
+    enable:
+      - appends
+      - asmdecl
+      - assign
+      - atomic
+      - atomicalign
+      - bools
+      - buildtag
+      - cgocall
+      - composites
+      - copylocks
+      - deepequalerrors
+      - defers
+      - directive
+      - errorsas
+      #      - fieldalignment
+      - findcall
+      - framepointer
+      - httpresponse
+      - ifaceassert
+      - loopclosure
+      - lostcancel
+      - nilfunc
+      #      - nilness
+      - printf
+      - reflectvaluecompare
+      - shadow
+      - shift
+      - sigchanyzer
+      - slog
+      - sortslice
+      - stdmethods
+      - stringintconv
+      - structtag
+      - testinggoroutine
+      - tests
+      - unmarshal
+      - unreachable
+      - unsafeptr
+      - unusedresult
+      - unusedwrite
 
   revive:
     rules:
@@ -34,64 +74,60 @@ linters-settings:
   wsl:
     allow-assign-and-anything: true
     allow-cuddle-declarations: true # should be false
+    allow-separated-leading-comment: true
 
   nolintlint:
-    allow-no-explanation: [ ]
+    allow-no-explanation: []
     require-explanation: false
     require-specific: false
 
   gosec:
     excludes:
-      - G404 # To be checked: Insecure random number source (rand)
-      - G602
-
-  stylecheck:
-    checks: [ "all", "-ST1003"] # ST1003: No underscores in package names should be fixed and removed?
+      - G601 # performance issue: https://github.com/golangci/golangci-lint/issues/4735
+      - G113 # performance issue: https://github.com/golangci/golangci-lint/issues/4735
 
   predeclared:
-    ignore: "error"
+    ignore: 'error'
 
-  gomnd:
+  mnd:
     ignored-functions:
       - 'math.*' # Magic number generation, should be fixed and removed?
 
-  cyclop:
-    max-complexity: 20
-    skip-tests: true
-    package-average: 0.0
+  stylecheck:
+    checks:
+      - all
+      - '-ST1003'
 
 linters:
   disable-all: true
   enable:
-    - asasalint
     - bodyclose
-    - cyclop #To be enabled in the future
-    # - depguard #We should create a correct config to enabe depguard
+    #- depguard #We should create a correct config to enabe depguard
     - dogsled
     - dupl
-    - dupword
-    - durationcheck
     - errcheck
-    - exportloopref
     - exhaustive
     - forbidigo
     - goconst
     - gocritic
     - gofmt
-    - goimports
-    #- gomnd # Magic numbers should be fixed and enable gomnd,
     - gocyclo
+    - goimports
     - gosec
     - gosimple
     - govet
     - ineffassign
     - misspell
-    - nolintlint
+    # - mnd # Magic numbers should be fixed and enable gomnd,
+    - nakedret
+    # - nolintlint # Current issue with the nolintlint linter (https://github.com/golangci/golangci-lint/issues/1940)
     - nakedret
     - prealloc
     - predeclared
     - revive
+    - sqlclosecheck
     - staticcheck
+    #- structcheck #The owner seems to have abandoned the linter.
     - stylecheck
     - thelper
     - tparallel
@@ -104,13 +140,22 @@ linters:
     - wsl
 
 run:
+  timeout: 5m
   issues-exit-code: 1
   tests: false
+  modules-download-mode: readonly
+
+issues:
+  exclude-dirs:
+    - cdk/
+  exclude-files:
+    - '(.+)wire_gen\.go'
+  uniq-by-line: false
 
 output:
-  path-prefix: ""
+  path-prefix: ''
   sort-results: true
-  format: tab
-  print-issued-lines: false
+  formats:
+    - format: colored-line-number
+  print-issued-lines: true
   print-linter-name: true
-  uniq-by-line: false
